@@ -53,7 +53,6 @@ const AudioPlayer = ({ song, gameState, setGameState, nextStep }) => {
   // Handle play logic
   useEffect(() => {
     const audio = audioRef.current;
-    console.log("Audio element:", audio); // Debugging line
     if (gameState.isPlaying) {
       console.debug("Starting playback...");
       audio.currentTime = 0;
