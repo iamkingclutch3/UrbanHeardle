@@ -42,7 +42,7 @@ export function startServer() {
 
   app.listen(PORT, () => {
     console.log(
-      `🎵 Local API server running at http://localhost:${PORT}/api/songs`
+      `Local API server running at http://localhost:${PORT}/api/songs`
     );
   });
 }
