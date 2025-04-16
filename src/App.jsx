@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getRandomSong, loadSongs, getAllSongs } from "./utils/songs";
+import { getRandomSong, loadAllSongs, getAllSongs } from "./utils/songs";
 import AudioPlayer from "./components/AudioPlayer";
 import ResultDisplay from "./components/ResultDisplay";
 import GuessAutocompleteInput from "./components/GuessAutocompleteInput";
@@ -19,7 +19,7 @@ function App() {
 
   useEffect(() => {
     const initializeGame = async () => {
-      await loadSongs();
+      await loadAllSongs();
       const songs = getAllSongs();
       setAllSongs(songs);
       setCurrentSong(getRandomSong());
