@@ -15,13 +15,30 @@ const PORT = 5240; // No 3000 or 7000
 
 let cachedSongs = null;
 
-app.use(cors());
+const allowedOrigins = [
+  "http://localhost:5174", // or whatever port Vite/React is using
+  "https://povlaoguess.sytes.net",
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    methods: ["GET", "POST"],
+    credentials: true,
+  })
+);
 
 app.get("/", (req, res) => {
   res.send("API is running!");
 });
 
-app.get("/api/songs", (req, res) => {
+app.get("/songs", (req, res) => {
   const limit = parseInt(req.query.limit) || 50;
   const offset = parseInt(req.query.offset) || 0;
 
@@ -41,8 +58,7 @@ app.get("/api/songs", (req, res) => {
   res.json({ songs: pagedSongs });
 });
 
-
-app.get("/api/metrics", (req, res) => {
+app.get("/metrics", (req, res) => {
   try {
     const metricsData = getLibraryMetrics();
     res.json(metricsData);
