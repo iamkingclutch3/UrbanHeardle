@@ -15,27 +15,6 @@ const PORT = 5240; // No 3000 or 7000
 
 let cachedSongs = null;
 
-const allowedOrigins = [
-  "http://localhost:5174", // or whatever port Vite/React is using
-  "https://povlaoguess.sytes.net",
-];
-
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    methods: ["GET", "POST"],
-    credentials: true,
-  })
-);
-
-app.options("*", cors());
-
 app.get("/", (req, res) => {
   res.send("API is running!");
 });
