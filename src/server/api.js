@@ -6,7 +6,6 @@ import { fileURLToPath } from "url";
 import genManifest from "./generateManifest.js";
 import { getLibraryMetrics } from "./metrics.js";
 import compression from "compression";
-import crypto from "crypto";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dbPath = path.join(__dirname, "../../public/songs/manifest.db");
