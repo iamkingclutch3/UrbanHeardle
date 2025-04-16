@@ -27,49 +27,6 @@ const insertOrReplace = db.prepare(`
   VALUES (@title, @artist, @file, @coverUrl)
 `);
 
-const generateManifest = async (songsDirectory) => {
-  const allFiles = fs.readdirSync(songsDirectory);
-  const songFiles = allFiles.filter(
-    (file) => path.extname(file).toLowerCase() === ".mp3"
-  );
-
-  // Get already processed files to skip them
-  const existingFiles = db
-    .prepare("SELECT file FROM songs")
-    .all()
-    .map((row) => row.file);
-  const existingSet = new Set(existingFiles);
-
-  const newSongs = songFiles.filter((file) => !existingSet.has(file));
-  console.log(
-    `Found ${songFiles.length} mp3 files, ${newSongs.length} new to process.`
-  );
-
-  const tasks = newSongs.map(async (songFile) => {
-    try {
-      const [artist, ...titleParts] = songFile.replace(".mp3", "").split(" - ");
-      const title = titleParts.join(" - ");
-      const coverUrl = await extractCoverImage(
-        path.join(songsDirectory, songFile)
-      );
-
-      const song = {
-        title: title.trim(),
-        artist: artist.trim() || "Unknown Artist",
-        file: songFile,
-        coverUrl,
-      };
-
-      insertOrReplace.run(song);
-    } catch (error) {
-      console.error("Error processing file:", songFile, error);
-    }
-  });
-
-  await Promise.all(tasks);
-  console.log("Manifest generation completed.");
-};
-
 let cachedPlaceholder = null;
 const getPlaceholderImage = () => {
   if (!cachedPlaceholder) {
@@ -106,8 +63,71 @@ const extractCoverImage = async (songPath) => {
   });
 };
 
+const processFile = async (songFile, songsDirectory) => {
+  try {
+    const [artist, ...titleParts] = songFile.replace(".mp3", "").split(" - ");
+    const title = titleParts.join(" - ");
+    const coverUrl = await extractCoverImage(
+      path.join(songsDirectory, songFile)
+    );
+
+    const song = {
+      title: title.trim(),
+      artist: artist.trim() || "Unknown Artist",
+      file: songFile,
+      coverUrl,
+    };
+
+    insertOrReplace.run(song);
+  } catch (err) {
+    console.error("Error processing file:", songFile, err);
+  }
+};
+
+// Throttled concurrent processing
+const processWithLimit = async (files, limit, songsDirectory) => {
+  let index = 0;
+
+  const next = async () => {
+    if (index >= files.length) return;
+    const current = index++;
+    await processFile(files[current], songsDirectory);
+    return next(); // Continue chain
+  };
+
+  const workers = [];
+  for (let i = 0; i < limit; i++) {
+    workers.push(next());
+  }
+
+  await Promise.all(workers);
+};
+
+const generateManifest = async (songsDirectory, concurrency = 10) => {
+  const allFiles = fs.readdirSync(songsDirectory);
+  const songFiles = allFiles.filter(
+    (file) => path.extname(file).toLowerCase() === ".mp3"
+  );
+
+  const existingFiles = db
+    .prepare("SELECT file FROM songs")
+    .all()
+    .map((row) => row.file);
+
+  const existingSet = new Set(existingFiles);
+  const newSongs = songFiles.filter((file) => !existingSet.has(file));
+
+  console.log(
+    `Found ${songFiles.length} mp3 files, ${newSongs.length} new to process...`
+  );
+
+  await processWithLimit(newSongs, concurrency, songsDirectory);
+
+  console.log("Manifest generation completed.");
+};
+
 function init() {
-  generateManifest(songsDir);
+  generateManifest(songsDir); // You can pass a second arg to limit concurrency if needed
 }
 
 export default init;
