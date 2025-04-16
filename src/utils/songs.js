@@ -11,13 +11,9 @@ async function fetchSongs(hostname, limit, offset) {
   try {
     const response = await axios({
       method: "get",
-      url: `http://${hostname}${
-        hostname === "localhost" ? ":5240" : ""
-      }/api/songs`,
-      params: {
-        limit: limit,
-        offset: offset,
-      },
+      url: `http://${hostname}${hostname == "localhost" ? "" : "/api"}${
+        hostname == "localhost" ? ":5240" : ""
+      }/songs?limit=${limit}&offset=${offset}`,
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
@@ -27,7 +23,7 @@ async function fetchSongs(hostname, limit, offset) {
       withCredentials: true, // Send cookies if needed
       crossDomain: true,
       // Timeout configuration
-      timeout: 5000, // 5 seconds timeout
+      timeout: 50000, // 5 seconds timeout
       // You can add response type if needed
       responseType: "json",
     });
