@@ -34,7 +34,7 @@ const GuessAutocompleteInput = ({ fetchSuggestions, onSubmit, disabled }) => {
       setIsLoading(true);
       try {
         const suggestions = await fetchSuggestions(value);
-        setFiltered(suggestions.slice(0, 6));
+        setFiltered(suggestions.slice(0, 50));
       } catch (error) {
         console.error("Error fetching suggestions:", error);
         setFiltered([]);
@@ -50,7 +50,7 @@ const GuessAutocompleteInput = ({ fetchSuggestions, onSubmit, disabled }) => {
     const fullText = `${song.artist} - ${song.title}`;
     setQuery(fullText);
     setFiltered([]);
-    onSubmit({ artist: song.artist, title: song.title });
+    //onSubmit({ artist: song.artist, title: song.title });
   };
 
   const handleSubmit = (e) => {

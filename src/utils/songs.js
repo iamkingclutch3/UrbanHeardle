@@ -58,13 +58,9 @@ export const getSongList = async () => {
       responseType: "json",
     });
 
-    const songData = response.data.song;
-    return {
-      filePath: `/songs/${songData.file}`,
-      artist: songData.artist?.trim() || "Unknown Artist",
-      title: songData.title?.trim() || "Unknown Title",
-      coverUrl: songData.coverUrl,
-    };
+    const songData = response.data.songs;
+
+    return songData;
   } catch (error) {
     console.error("Error fetching song list:", error);
     return [];

@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import Database from "better-sqlite3";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import genManifest from "./generateManifest.js";
 import { getLibraryMetrics } from "./metrics.js";
@@ -91,6 +92,41 @@ app.get("/metrics", (req, res) => {
   } catch (err) {
     console.error("Metrics Error:", err.message);
     res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+const feedbackFile = path.join(process.cwd(), "feedback.json");
+
+app.use(express.json());
+app.post("/feedback", (req, res) => {
+  const { category, message } = req.body;
+
+  if (!category || !message) {
+    return res.status(400).json({ error: "Missing category or message." });
+  }
+
+  const newFeedback = {
+    id: Date.now(),
+    category,
+    message,
+    timestamp: new Date().toISOString(),
+  };
+
+  try {
+    let feedbackData = [];
+
+    if (fs.existsSync(feedbackFile)) {
+      const existing = fs.readFileSync(feedbackFile, "utf8");
+      feedbackData = JSON.parse(existing || "[]");
+    }
+
+    feedbackData.push(newFeedback);
+    fs.writeFileSync(feedbackFile, JSON.stringify(feedbackData, null, 2));
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Failed to save feedback:", err);
+    res.status(500).json({ error: "Could not save feedback." });
   }
 });
 

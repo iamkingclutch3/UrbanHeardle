@@ -3,8 +3,7 @@ import { getRandomSong, getSongList } from "./utils/songs";
 import AudioPlayer from "./components/AudioPlayer";
 import ResultDisplay from "./components/ResultDisplay";
 import GuessAutocompleteInput from "./components/GuessAutocompleteInput";
-
-const MAX_GUESSES = 6;
+import FeedbackWidget from "./components/FeedbackWidget";
 
 function App() {
   const [currentSong, setCurrentSong] = useState(null);
@@ -62,8 +61,9 @@ function App() {
     }
   };
 
-  const resetGame = () => {
-    setCurrentSong(getRandomSong());
+  const resetGame = async () => {
+    const newSong = await getRandomSong();
+    setCurrentSong(newSong);
     setGameState({
       step: 1,
       isPlaying: false,
@@ -97,6 +97,7 @@ function App() {
               gameState={gameState}
               setGameState={setGameState}
               nextStep={nextStep}
+              handleGuessSubmit={handleGuessSubmit}
             />
           </div>
           <div className="hidden md:block w-px bg-gray-600 opacity-50 mx-10"></div>{" "}
@@ -140,6 +141,7 @@ function App() {
             Nuevo juego
           </button>
         </div>
+        <FeedbackWidget />
       </main>
     </div>
   );

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-const AudioPlayer = ({ song, gameState, setGameState, nextStep }) => {
+const AudioPlayer = ({ song, gameState, setGameState, nextStep, handleGuessSubmit }) => {
   const audioRef = useRef(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [volume, setVolume] = useState(0.5);
@@ -54,13 +54,11 @@ const AudioPlayer = ({ song, gameState, setGameState, nextStep }) => {
   useEffect(() => {
     const audio = audioRef.current;
     if (gameState.isPlaying) {
-      console.debug("Starting playback...");
       audio.currentTime = 0;
       audio.play();
 
       const clipDuration = getClipDuration(gameState.step);
       const timeout = setTimeout(() => {
-        console.debug("Stopping playback after clip duration");
         audio.pause();
         setGameState((prev) => ({ ...prev, isPlaying: false }));
       }, clipDuration * 1000);
@@ -68,7 +66,6 @@ const AudioPlayer = ({ song, gameState, setGameState, nextStep }) => {
       return () => {
         clearTimeout(timeout);
         audio.pause(); // Ensure audio stops on unmount or state change
-        console.debug("Cleanup: Audio paused and timeout cleared");
       };
     }
   }, [gameState.isPlaying, gameState.step]);
@@ -197,8 +194,11 @@ const AudioPlayer = ({ song, gameState, setGameState, nextStep }) => {
         {gameState.step < durations.length && !gameState.isRevealed && (
           <button
             onClick={() => {
-              console.debug("Advancing to next step");
               nextStep();
+              handleGuessSubmit({
+                artist: "Skip ",
+                title: "❌",
+              });
             }}
             className="text-sm bg-gray-800 hover:bg-gray-700 px-3 py-1 rounded"
           >
