@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getRandomSong, loadAllSongs, getAllSongs } from "./utils/songs";
+import { getRandomSong, getSongList } from "./utils/songs";
 import AudioPlayer from "./components/AudioPlayer";
 import ResultDisplay from "./components/ResultDisplay";
 import GuessAutocompleteInput from "./components/GuessAutocompleteInput";
@@ -8,7 +8,6 @@ const MAX_GUESSES = 6;
 
 function App() {
   const [currentSong, setCurrentSong] = useState(null);
-  const [allSongs, setAllSongs] = useState([]);
   const [gameState, setGameState] = useState({
     step: 1,
     isPlaying: false,
@@ -19,10 +18,7 @@ function App() {
 
   useEffect(() => {
     const initializeGame = async () => {
-      await loadAllSongs();
-      const songs = getAllSongs();
-      setAllSongs(songs);
-      setCurrentSong(getRandomSong());
+      setCurrentSong(await getRandomSong());
       setIsLoading(false);
     };
 
@@ -79,8 +75,7 @@ function App() {
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
-        <div className="animate-pulse mb-6">
-        </div>
+        <div className="animate-pulse mb-6"></div>
         <p className="text-lg font-medium animate-pulse tracking-widest">
           Cargando canciones...
         </p>
@@ -126,7 +121,14 @@ function App() {
           <GuessAutocompleteInput
             onSubmit={handleGuessSubmit}
             disabled={gameState.isPlaying}
-            songs={allSongs}
+            fetchSuggestions={async (query) => {
+              const songs = await getSongList();
+              return songs.filter(
+                (song) =>
+                  song.title.toLowerCase().includes(query.toLowerCase()) ||
+                  song.artist.toLowerCase().includes(query.toLowerCase())
+              );
+            }}
           />
         )}
 
