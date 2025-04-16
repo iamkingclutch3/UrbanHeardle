@@ -19,9 +19,6 @@ async function fetchSongs(hostname, limit, offset) {
         "Content-Type": "application/json",
         // Add any other headers you might need
       },
-      // CORS related configurations
-      withCredentials: true, // Send cookies if needed
-      crossDomain: true,
       // Timeout configuration
       timeout: 50000, // 5 seconds timeout
       // You can add response type if needed

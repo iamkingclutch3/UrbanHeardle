@@ -15,6 +15,8 @@ const PORT = 5240; // No 3000 or 7000
 
 let cachedSongs = null;
 
+app.use(cors());
+
 app.get("/", (req, res) => {
   res.send("API is running!");
 });
