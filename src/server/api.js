@@ -54,7 +54,6 @@ app.get("/api/metrics", (req, res) => {
 
 export function startServer() {
   genManifest();
-  loadSongsFromDB();
 
   app.listen(PORT, () => {
     console.log(
