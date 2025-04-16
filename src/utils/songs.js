@@ -8,7 +8,12 @@ export const getRandomSong = () => {
 export const loadSongs = async () => {
   const hostname = window.location.hostname;
   try {
-    const res = await fetch(`http://${hostname}${hostname == "localhost" ? ":5240" : ""}/api/songs`);
+    const res = await fetch(
+      `http://${hostname}${hostname == "localhost" ? ":5240" : ""}/api/songs`
+    );
+    console.log(
+      `http://${hostname}${hostname == "localhost" ? ":5240" : ""}/api/songs`
+    );
     const songData = await res.json();
 
     songs.length = 0; // Clear existing songs
