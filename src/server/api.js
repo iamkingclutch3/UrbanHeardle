@@ -15,6 +15,10 @@ const PORT = 5240; // No 3000 or 7000
 
 app.use(cors());
 
+app.get("/", (req, res) => {
+  res.send("API is running!");
+});
+
 app.get("/api/songs", (req, res) => {
   try {
     const songs = db
