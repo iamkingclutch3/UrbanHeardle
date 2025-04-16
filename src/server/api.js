@@ -13,6 +13,8 @@ const db = new Database(dbPath);
 const app = express();
 const PORT = 5240; // No 3000 or 7000
 
+let cachedSongs = null;
+
 app.use(cors());
 
 app.get("/", (req, res) => {
@@ -20,16 +22,25 @@ app.get("/", (req, res) => {
 });
 
 app.get("/api/songs", (req, res) => {
-  try {
-    const songs = db
-      .prepare("SELECT title, artist, file, coverUrl FROM songs")
-      .all();
-    res.json({ songs });
-  } catch (err) {
-    console.error("DB Error:", err.message);
-    res.status(500).json({ error: "Internal Server Error" });
+  const limit = parseInt(req.query.limit) || 50;
+  const offset = parseInt(req.query.offset) || 0;
+
+  if (!cachedSongs) {
+    try {
+      cachedSongs = db
+        .prepare("SELECT title, artist, file, coverUrl FROM songs")
+        .all();
+      console.log(`Cached ${cachedSongs.length} songs`);
+    } catch (err) {
+      console.error("DB Error:", err.message);
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
   }
+
+  const pagedSongs = cachedSongs.slice(offset, offset + limit);
+  res.json({ songs: pagedSongs });
 });
+
 
 app.get("/api/metrics", (req, res) => {
   try {
@@ -43,6 +54,7 @@ app.get("/api/metrics", (req, res) => {
 
 export function startServer() {
   genManifest();
+  loadSongsFromDB();
 
   app.listen(PORT, () => {
     console.log(
