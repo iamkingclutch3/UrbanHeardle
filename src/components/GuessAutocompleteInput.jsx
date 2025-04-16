@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 const GuessAutocompleteInput = ({ songs, onSubmit, disabled }) => {
+  disabled = false;
   const [query, setQuery] = useState("");
   const [filtered, setFiltered] = useState([]);
 

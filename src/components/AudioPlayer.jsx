@@ -145,12 +145,10 @@ const AudioPlayer = ({ song, gameState, setGameState, nextStep }) => {
               max="1"
               step="0.01"
               value={volume}
-              class="vertical"
               orient="vertical"
               onChange={(e) => setVolume(parseFloat(e.target.value))}
-              className="absolute h-full w-2 appearance-none bg-transparent"
+              className="vertical absolute h-full w-2 appearance-none bg-transparent"
               style={{
-                "-webkit-appearance": "slider-vertical",
                 WebkitAppearance: "slider-vertical",
                 writingMode: "bt-lr",
                 background: `linear-gradient(to top, white ${
