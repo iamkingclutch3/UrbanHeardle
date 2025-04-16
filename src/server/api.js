@@ -15,6 +15,8 @@ const db = new Database(dbPath);
 const app = express();
 const PORT = 5240; // No 3000 or 7000
 
+const BATCH_SIZE = 500;
+
 let cachedSongs = null;
 
 app.use(cors());
@@ -58,20 +60,48 @@ export function startServer() {
   genManifest();
 
   // Cache the songs once on startup
-  try {
-    const allSongs = db
-      .prepare("SELECT title, artist, file, coverUrl FROM songs")
-      .all();
-    const outputPath = path.join(__dirname, "../../dist/songs/songs.json");
-    fs.writeFileSync(outputPath, JSON.stringify(allSongs));
-    console.log(`Saved ${allSongs.length} songs to ${outputPath}`);
-  } catch (err) {
-    console.error("Failed to save songs.json:", err.message);
-  }
+  exportSongsToJson();
 
   app.listen(PORT, () => {
     console.log(
       `Local API server running at http://localhost:${PORT}/api/songs`
     );
   });
+}
+
+function exportSongsToJson() {
+  try {
+    const total = db.prepare("SELECT COUNT(*) AS count FROM songs").get().count;
+    const outputPath = path.join(__dirname, "../../dist/songs/songs.json");
+
+    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+
+    const stream = fs.createWriteStream(outputPath);
+    stream.write("[\n");
+
+    const select = db.prepare(
+      `SELECT title, artist, file, coverUrl FROM songs LIMIT ? OFFSET ?`
+    );
+
+    let written = 0;
+
+    for (let offset = 0; offset < total; offset += BATCH_SIZE) {
+      const batch = select.all(BATCH_SIZE, offset);
+
+      batch.forEach((song, index) => {
+        const json = JSON.stringify(song, null, 2);
+        const isLast = offset + index + 1 === total;
+
+        stream.write(json + (isLast ? "\n" : ",\n"));
+        written++;
+      });
+    }
+
+    stream.write("]");
+    stream.end();
+
+    console.log(`Saved ${written} songs to ${outputPath}`);
+  } catch (err) {
+    console.error("Failed to save songs.json:", err.message);
+  }
 }
