@@ -8,9 +8,6 @@ export const getRandomSong = () => {
 export const loadSongs = async () => {
   const hostname = window.location.hostname;
   try {
-    console.log(
-      `http://${hostname}${hostname == "localhost" ? ":5240" : ""}/api/songs`
-    );
     const res = await fetch(
       `http://${hostname}${hostname == "localhost" ? ":5240" : ""}/api/songs`
     );
