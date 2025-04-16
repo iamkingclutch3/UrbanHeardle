@@ -11,7 +11,9 @@ async function fetchSongs(hostname, limit, offset) {
   try {
     const response = await axios({
       method: "get",
-      url: `http://${hostname}${hostname == "localhost" ? ":5240" : ""}${
+      url: `http${hostname == "localhost" ? "" : "s"}://${hostname}${
+        hostname == "localhost" ? ":5240" : ""
+      }${
         hostname == "localhost" ? "" : "/api"
       }/songs?limit=${limit}&offset=${offset}`,
       headers: {
