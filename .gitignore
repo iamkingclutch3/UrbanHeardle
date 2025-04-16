@@ -13,6 +13,7 @@ dist-ssr
 *.local
 *.mp3
 *.db
+public/songs/*.*
 
 # Editor directories and files
 .vscode/*

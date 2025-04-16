@@ -72,14 +72,35 @@ export const loadSongs = async (limit = 50, offset = 0) => {
 };
 
 export const loadAllSongs = async () => {
-  let offset = 0;
-  const limit = 50;
-  let keepLoading = true;
+  try {
+    const res = await fetch("/songs/songs.json");
+    console.log(res);
+    const songData = await res.json();
 
-  while (keepLoading) {
-    const count = await loadSongs(limit, offset);
-    if (!count || count < limit) keepLoading = false;
-    offset += limit;
+    songs.length = 0;
+
+    for (const entry of songData) {
+      songs.push({
+        id: entry.file,
+        filePath: `/songs/${entry.file}`,
+        artist: entry.artist.trim(),
+        title: entry.title.trim(),
+        coverUrl: entry.coverUrl,
+      });
+    }
+
+    console.log(`Loaded ${songs.length} songs`);
+  } catch (err) {
+    console.error("Failed to load songs.json. Trying with API", err);
+    let offset = 0;
+    const limit = 100;
+    let keepLoading = true;
+
+    while (keepLoading) {
+      const count = await loadSongs(limit, offset);
+      if (!count || count < limit) keepLoading = false;
+      offset += limit;
+    }
   }
 };
 

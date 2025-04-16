@@ -78,8 +78,12 @@ function App() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        Loading...
+      <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
+        <div className="animate-pulse mb-6">
+        </div>
+        <p className="text-lg font-medium animate-pulse tracking-widest">
+          Cargando canciones...
+        </p>
       </div>
     );
   }
