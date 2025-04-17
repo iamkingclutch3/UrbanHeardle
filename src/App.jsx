@@ -44,6 +44,10 @@ function App() {
     const maxGuessesReached = newGuesses.length >= 6;
     const isCorrect = isCorrectArtist && isCorrectTitle;
 
+    if(!isCorrect && !maxGuessesReached) {
+      nextStep();
+    }
+
     setGameState((prev) => ({
       ...prev,
       guesses: newGuesses,
@@ -56,7 +60,7 @@ function App() {
       setGameState((prev) => ({
         ...prev,
         step: prev.step + 1,
-        isPlaying: false,
+        //isPlaying: false,
       }));
     }
   };

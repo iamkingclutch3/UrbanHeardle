@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 
-const AudioPlayer = ({ song, gameState, setGameState, nextStep, handleGuessSubmit }) => {
+const AudioPlayer = ({
+  song,
+  gameState,
+  setGameState,
+  nextStep,
+  handleGuessSubmit,
+}) => {
   const audioRef = useRef(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [volume, setVolume] = useState(0.5);
@@ -8,7 +14,7 @@ const AudioPlayer = ({ song, gameState, setGameState, nextStep, handleGuessSubmi
   const barRef = useRef(null);
   const [barWidth, setBarWidth] = useState(0);
 
-  const durations = [1, 2, 4, 7, 11, 16];
+  const durations = [2, 4, 7, 11, 16, 22];
   const maxUnlockedDuration = durations[durations.length - 1]; // 16 seconds
   const stepMarkers = durations.map((value, index) => ({
     time: value,
@@ -33,6 +39,7 @@ const AudioPlayer = ({ song, gameState, setGameState, nextStep, handleGuessSubmi
   useEffect(() => {
     const audio = audioRef.current;
     const handleTimeUpdate = () => {
+      console.log("Audio element:", audio.currentTime);
       setCurrentTime(audio.currentTime);
     };
 
@@ -53,26 +60,33 @@ const AudioPlayer = ({ song, gameState, setGameState, nextStep, handleGuessSubmi
   // Handle play logic
   useEffect(() => {
     const audio = audioRef.current;
-    if (gameState.isPlaying) {
-      audio.currentTime = 0;
-      audio.play();
 
-      const clipDuration = getClipDuration(gameState.step);
-      const timeout = setTimeout(() => {
+    if (!gameState.isPlaying) return;
+
+    const clipEnd = getClipDuration(gameState.step); // in seconds
+
+    const handleTimeUpdate = () => {
+      if (audio.currentTime >= clipEnd) {
         audio.pause();
         setGameState((prev) => ({ ...prev, isPlaying: false }));
-      }, clipDuration * 1000);
+      }
+    };
 
-      return () => {
-        clearTimeout(timeout);
-        audio.pause(); // Ensure audio stops on unmount or state change
-      };
+    if (audio.paused) {
+      audio.currentTime = 0;
+      audio.play();
     }
-  }, [gameState.isPlaying, gameState.step]);
+
+    audio.addEventListener("timeupdate", handleTimeUpdate);
+
+    return () => {
+      audio.removeEventListener("timeupdate", handleTimeUpdate);
+    };
+  }, [gameState.step, gameState.isPlaying]);
 
   const formatTime = (timeInSeconds) => {
-    const minutes = Math.floor(timeInSeconds / 60);
-    const seconds = Math.ceil(timeInSeconds % 60);
+    const minutes = Math.round(timeInSeconds / 60);
+    const seconds = Math.round(timeInSeconds % 60);
     return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
   };
 
@@ -82,7 +96,8 @@ const AudioPlayer = ({ song, gameState, setGameState, nextStep, handleGuessSubmi
   };
 
   const getClipDuration = (step) => {
-    return durations[step - 1] || 0;
+    if (step < 1 || step > durations.length) return 0;
+    return durations[step - 1];
   };
 
   const togglePlay = () => {
@@ -94,7 +109,13 @@ const AudioPlayer = ({ song, gameState, setGameState, nextStep, handleGuessSubmi
       setGameState((prev) => ({ ...prev, isPlaying: false }));
     } else {
       //console.debug("Manually starting playback");
-      setGameState((prev) => ({ ...prev, isPlaying: true }));
+      // If audio is already playing (from previous step), just update state
+      if (!audio.paused) {
+        setGameState((prev) => ({ ...prev, isPlaying: true }));
+      } else {
+        // Otherwise start fresh
+        setGameState((prev) => ({ ...prev, isPlaying: true }));
+      }
     }
   };
 
@@ -146,8 +167,9 @@ const AudioPlayer = ({ song, gameState, setGameState, nextStep, handleGuessSubmi
               onChange={(e) => setVolume(parseFloat(e.target.value))}
               className="vertical absolute h-full w-2 appearance-none bg-transparent"
               style={{
-                WebkitAppearance: "slider-vertical",
-                writingMode: "bt-lr",
+                writingMode: "vertical-lr",
+                direction: "rtl",
+                //WebkitAppearance: "slider-vertical",
                 background: `linear-gradient(to top, white ${
                   volume * 100
                 }%, rgba(255,255,255,0.2) ${volume * 100}%)`,
@@ -194,7 +216,6 @@ const AudioPlayer = ({ song, gameState, setGameState, nextStep, handleGuessSubmi
         {gameState.step < durations.length && !gameState.isRevealed && (
           <button
             onClick={() => {
-              nextStep();
               handleGuessSubmit({
                 artist: "Skip ",
                 title: "❌",
@@ -235,11 +256,13 @@ const AudioPlayer = ({ song, gameState, setGameState, nextStep, handleGuessSubmi
         <div
           className="absolute top-0 left-0 h-full bg-blue-500"
           style={{
-            width: `${
+            width: `${Math.min(
+              (currentTime / getClipDuration(gameState.step)) *
+                (getUnlockedDuration(gameState.step) / maxUnlockedDuration) *
+                barWidth,
               (getUnlockedDuration(gameState.step) / maxUnlockedDuration) *
-              Math.min(currentTime / getUnlockedDuration(gameState.step), 1) *
-              barWidth
-            }px`,
+                barWidth
+            )}px`,
           }}
         ></div>
       </div>
