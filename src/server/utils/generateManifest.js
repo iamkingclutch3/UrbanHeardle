@@ -9,8 +9,6 @@ const songsDir = path.join(__dirname, "../../../public/songs");
 
 const db = new Database(path.join(songsDir, "../manifest.db"));
 
-db.prepare("CREATE INDEX IF NOT EXISTS idx_songs_file ON songs(file)").run();
-
 // Create table if it doesn't exist
 db.prepare(
   `
@@ -24,6 +22,8 @@ db.prepare(
   )
 `
 ).run();
+
+db.prepare("CREATE INDEX IF NOT EXISTS idx_songs_file ON songs(file)").run();
 
 const insertOrReplace = db.prepare(`
   INSERT OR REPLACE INTO songs (title, artist, file, coverUrl, modified)
