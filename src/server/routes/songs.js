@@ -41,8 +41,24 @@ router.get("/random", (req, res) => {
       return res.status(404).json({ error: "No songs available" });
     }
 
+    const requestedArtist = req.query.artist;
+    let filteredSongs = cachedSongs;
+
+    // If an artist is specified, filter the songs
+    if (requestedArtist) {
+      filteredSongs = cachedSongs.filter(
+        (song) => song.artist.toLowerCase() === requestedArtist.toLowerCase()
+      );
+
+      if (filteredSongs.length === 0) {
+        return res.status(404).json({
+          error: `No songs available for artist: ${requestedArtist}`,
+        });
+      }
+    }
+
     const randomSong =
-      cachedSongs[Math.floor(Math.random() * cachedSongs.length)];
+      filteredSongs[Math.floor(Math.random() * filteredSongs.length)];
 
     res.json({ song: randomSong });
   } catch (err) {

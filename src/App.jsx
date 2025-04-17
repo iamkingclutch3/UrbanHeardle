@@ -128,8 +128,9 @@ function App() {
                 song={currentSong}
                 gameState={gameState}
                 setGameState={setGameState}
-                nextStep={nextStep}
                 handleGuessSubmit={handleGuessSubmit}
+                setCurrentSong={setCurrentSong}
+                getRandomSong={getRandomSong}
               />
             </div>
             <div className="hidden md:block w-px bg-gray-600 opacity-50 mx-10"></div>{" "}

@@ -1,10 +1,14 @@
-export const getRandomSong = async () => {
+export const getRandomSong = async (artist = "mda") => {
   const hostname = window.location.hostname;
 
   try {
-    const url = `http${hostname === "localhost" ? "" : "s"}://${hostname}${
+    let url = `http${hostname === "localhost" ? "" : "s"}://${hostname}${
       hostname === "localhost" ? ":5240" : ""
     }${hostname === "localhost" ? "" : "/api"}/songs/random`;
+
+    if(artist) {
+      url += `?artist=${encodeURIComponent(artist)}`;
+    }
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000);

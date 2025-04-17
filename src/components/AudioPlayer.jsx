@@ -4,15 +4,19 @@ const AudioPlayer = ({
   song,
   gameState,
   setGameState,
-  nextStep,
   handleGuessSubmit,
+  setCurrentSong,
+  getRandomSong,
 }) => {
   const audioRef = useRef(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [volume, setVolume] = useState(0.5);
+  const [isLoading, setIsLoading] = useState(false);
 
   const barRef = useRef(null);
   const [barWidth, setBarWidth] = useState(0);
+
+  const [error, setError] = useState(null);
 
   const durations = [2, 4, 7, 11, 16, 22];
   const maxUnlockedDuration = durations[durations.length - 1]; // 16 seconds
@@ -68,19 +72,58 @@ const AudioPlayer = ({
       if (audio.currentTime >= clipEnd) {
         audio.pause();
         setGameState((prev) => ({ ...prev, isPlaying: false }));
+        setIsLoading(false);
       }
     };
 
-    if (audio.paused) {
-      audio.currentTime = 0;
-      audio.play();
-    }
-
-    audio.addEventListener("timeupdate", handleTimeUpdate);
-
-    return () => {
-      audio.removeEventListener("timeupdate", handleTimeUpdate);
+    const handleError = (error) => {
+      console.error("Audio error:", error);
+      setError(error.message || "Playback failed");
+      setIsLoading(false);
+      setGameState((prev) => ({
+        ...prev,
+        isPlaying: false,
+        error: `Playback failed: ${error.message || "Unknown error"}`,
+      }));
     };
+
+    const handleCanPlay = () => {
+      setIsLoading(false);
+    };
+
+    try {
+      if (audio.paused) {
+        setIsLoading(true);
+        setError(null);
+        audio.currentTime = 0;
+
+        // Set up error handling first
+        audio.addEventListener("timeupdate", handleTimeUpdate);
+        audio.addEventListener("error", handleError);
+        audio.addEventListener("canplay", handleCanPlay);
+
+        const playPromise = audio.play();
+
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              setIsLoading(false);
+            })
+            .catch((playError) => {
+              handleError(playError);
+              audio.pause();
+            });
+        }
+      }
+
+      return () => {
+        audio.removeEventListener("timeupdate", handleTimeUpdate);
+        audio.removeEventListener("error", handleError);
+        audio.removeEventListener("canplay", handleCanPlay);
+      };
+    } catch (err) {
+      handleError(err);
+    }
   }, [gameState.step, gameState.isPlaying]);
 
   const formatTime = (timeInSeconds) => {
@@ -126,6 +169,34 @@ const AudioPlayer = ({
 
   return (
     <div className="mb-8 max-w-sm mx-auto">
+      {error && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-600 text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-4 z-50 animate-fade-in-down">
+          <span className="text-sm font-medium">Something went wrong!</span>
+          <button
+            onClick={async () => {
+              setError(null);
+              const newSong = await getRandomSong();
+              setCurrentSong(newSong);
+              setGameState((prev) => ({
+                ...prev,
+                isPlaying: false,
+                step: 1,
+                isRevealed: false,
+                error: null,
+              }));
+            }}
+            className="flex items-center justify-center bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full p-2"
+            title="Try a different song"
+          >
+            <SkipIcon />
+          </button>
+        </div>
+      )}
+      {isLoading && (
+        <div className="loading-indicator">
+          <p>Loading audio...</p>
+        </div>
+      )}
       <div className="flex items-start mb-6 gap-3">
         {/* Vertical Volume Control */}
         <div className="flex flex-col items-center justify-center h-full space-y-5 space-x-2.5 mr-2">
@@ -305,6 +376,17 @@ const PauseIcon = () => (
       d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z"
       clipRule="evenodd"
     />
+  </svg>
+);
+
+const SkipIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className="h-6 w-6 text-gray-800"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+  >
+    <path d="M16.5 12L7.5 18V6l9 6zm1.5-6v12h2V6h-2z" />
   </svg>
 );
 
