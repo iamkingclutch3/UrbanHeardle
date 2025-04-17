@@ -11,7 +11,7 @@ const PORT = 5174;
 
 if (process.platform == "win32") { // Local tests
   app.listen(PORT, () => {
-    console.log(`Main server running at http://localhost:${PORT}`);
+    console.log("Running only API")
     startServer(); // Start the API server
   });
 } else { // Production server

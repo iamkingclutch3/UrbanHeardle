@@ -5,9 +5,9 @@ import jsmediatags from "jsmediatags";
 import Database from "better-sqlite3";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const songsDir = path.join(__dirname, "../../public/songs");
+const songsDir = path.join(__dirname, "../../../public/songs");
 
-const db = new Database(path.join(songsDir, "manifest.db"));
+const db = new Database(path.join(songsDir, "../manifest.db"));
 
 // Create table if it doesn't exist
 db.prepare(
@@ -32,7 +32,7 @@ const getPlaceholderImage = () => {
   if (!cachedPlaceholder) {
     const placeholderPath = path.join(
       __dirname,
-      "../../public/assets/cover/placeholder-cover.jpg"
+      "../../../public/assets/cover/placeholder-cover.jpg"
     );
     const placeholderImage = fs.readFileSync(placeholderPath);
     cachedPlaceholder = `data:image/jpeg;base64,${placeholderImage.toString(

@@ -1,23 +1,27 @@
-import axios from "axios";
-
 export const getRandomSong = async () => {
   const hostname = window.location.hostname;
 
   try {
-    const response = await axios({
-      method: "get",
-      url: `http${hostname == "localhost" ? "" : "s"}://${hostname}${
-        hostname == "localhost" ? ":5240" : ""
-      }${hostname == "localhost" ? "" : "/api"}/songs/random`,
+    const url = `http${hostname === "localhost" ? "" : "s"}://${hostname}${
+      hostname === "localhost" ? ":5240" : ""
+    }${hostname === "localhost" ? "" : "/api"}/songs/random`;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+    const response = await fetch(url, {
+      method: "GET",
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
       },
-      timeout: 5000,
-      responseType: "json",
+      signal: controller.signal,
     });
 
-    const songData = response.data.song;
+    clearTimeout(timeoutId);
+
+    const responseData = await response.json();
+    const songData = responseData.song;
 
     return {
       filePath: `/songs/${songData.file}`,
@@ -45,20 +49,26 @@ export const getSongList = async () => {
   const hostname = window.location.hostname;
 
   try {
-    const response = await axios({
-      method: "get",
-      url: `http${hostname == "localhost" ? "" : "s"}://${hostname}${
-        hostname == "localhost" ? ":5240" : ""
-      }${hostname == "localhost" ? "" : "/api"}/songs/list`,
+    const url = `http${hostname === "localhost" ? "" : "s"}://${hostname}${
+      hostname === "localhost" ? ":5240" : ""
+    }${hostname === "localhost" ? "" : "/api"}/songs/list`;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+    const response = await fetch(url, {
+      method: "GET",
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
       },
-      timeout: 5000,
-      responseType: "json",
+      signal: controller.signal,
     });
 
-    const songData = response.data.songs;
+    clearTimeout(timeoutId);
+
+    const responseData = await response.json();
+    const songData = responseData.songs;
 
     return songData;
   } catch (error) {

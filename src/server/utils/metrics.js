@@ -3,7 +3,7 @@ import { fileURLToPath } from "url";
 import Database from "better-sqlite3";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dbPath = path.join(__dirname, "../../public/songs/manifest.db");
+const dbPath = path.join(__dirname, "../../../public/manifest.db");
 
 const db = new Database(dbPath, { readonly: true });
 

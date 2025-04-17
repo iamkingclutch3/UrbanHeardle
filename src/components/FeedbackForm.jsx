@@ -1,5 +1,4 @@
 import { useState } from "react";
-import axios from "axios";
 
 const FeedbackForm = () => {
   const [category, setCategory] = useState("bug");
@@ -14,25 +13,21 @@ const FeedbackForm = () => {
     setLoading(true);
     try {
       const hostname = window.location.hostname;
-      const baseURL = `http${
-        hostname == "localhost" ? "" : "s"
-      }://${hostname}${hostname == "localhost" ? ":5240" : ""}${
-        hostname == "localhost" ? "" : "/api"
-      }`;
+      const baseURL = `http${hostname == "localhost" ? "" : "s"}://${hostname}${
+        hostname == "localhost" ? ":5240" : ""
+      }${hostname == "localhost" ? "" : "/api"}`;
 
       // Send to your backend (adjust URL accordingly)
-      await axios.post(
-        `${baseURL}/feedback`,
-        {
+      await fetch(`${baseURL}/feedback`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
           category: category || "general", // Default fallback
           message: message || "", // Default fallback
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+        }),
+      });
 
       setSubmitted(true);
       setMessage("");

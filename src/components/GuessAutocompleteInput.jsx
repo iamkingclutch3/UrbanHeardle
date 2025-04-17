@@ -57,9 +57,10 @@ const GuessAutocompleteInput = ({ fetchSuggestions, onSubmit, disabled }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     // Optional: let users enter guesses manually in "Artist - Title" format
-    const parts = query.split(" - ");
-    if (parts.length === 2 && parts[0].trim() && parts[1].trim()) {
-      onSubmit({ artist: parts[0].trim(), title: parts[1].trim() });
+    const [artist, ...titleParts] = query.split(" - ");
+    const title = titleParts.join(" - ");
+    if (query.split(" - ").length > 1 && artist.trim() && title) {
+      onSubmit({ artist: artist.trim(), title: title });
       setQuery("");
     }
   };
