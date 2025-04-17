@@ -15,7 +15,6 @@ dist-ssr
 *.db
 public/songs/*.*
 feedback.json
-google5f28472f346cac2b.html
 
 # Editor directories and files
 .vscode/*
