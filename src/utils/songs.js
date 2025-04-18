@@ -1,4 +1,4 @@
-export const getRandomSong = async (artist = "Slappy Av") => {
+export const getRandomSong = async (artist = null) => {
   const hostname = window.location.hostname;
 
   try {
