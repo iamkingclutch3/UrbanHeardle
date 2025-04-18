@@ -60,6 +60,8 @@ router.get("/random", (req, res) => {
     const randomSong =
       filteredSongs[Math.floor(Math.random() * filteredSongs.length)];
 
+    randomSong.file = randomSong.file;
+
     res.json({ song: randomSong });
   } catch (err) {
     console.error("DB Error:", err.message);
@@ -86,5 +88,15 @@ router.get("/", (req, res) => {
   const pagedSongs = cachedSongs.slice(offset, offset + limit);
   res.json({ songs: pagedSongs });
 });
+
+function getSafeFilePath(filename) {
+  const a =  encodeURI(filename)
+    .replace(/'/g, "%27")
+    .replace(/\(/g, "%28")
+    .replace(/\)/g, "%29");
+
+    console.log("Filename: ", filename, "Encoded: ", a);
+    return a;
+}
 
 export default router;

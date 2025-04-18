@@ -343,7 +343,8 @@ const AudioPlayer = ({
         <span>{formatTime(maxUnlockedDuration)}</span>
       </div>
 
-      <audio ref={audioRef} src={song?.filePath} preload="auto" />
+
+      <audio ref={audioRef} src={encodeURI(song?.filePath)} preload="auto" />
     </div>
   );
 };

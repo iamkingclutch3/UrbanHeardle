@@ -1,4 +1,4 @@
-export const getRandomSong = async (artist = null) => {
+export const getRandomSong = async (artist = "Slappy Av") => {
   const hostname = window.location.hostname;
 
   try {
@@ -6,7 +6,7 @@ export const getRandomSong = async (artist = null) => {
       hostname === "localhost" ? ":5240" : ""
     }${hostname === "localhost" ? "" : "/api"}/songs/random`;
 
-    if(artist) {
+    if (artist) {
       url += `?artist=${encodeURIComponent(artist)}`;
     }
 
@@ -80,3 +80,13 @@ export const getSongList = async () => {
     return [];
   }
 };
+
+function getOriginalFilePath(safeFilePath) {
+  let a = safeFilePath
+    .replace(/%27/g, "'")
+    .replace(/%28/g, "(")
+    .replace(/%29/g, ")");
+  a = decodeURI(a);
+  console.log("Coded Filename: ", safeFilePath, "Decoded: ", a);
+  return a;
+}
