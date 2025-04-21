@@ -12,6 +12,9 @@ const AudioPlayer = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [volume, setVolume] = useState(0.5);
   const [isLoading, setIsLoading] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const manualStepAdvance = useRef(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const barRef = useRef(null);
   const [barWidth, setBarWidth] = useState(0);
@@ -66,11 +69,14 @@ const AudioPlayer = ({
 
     if (!gameState.isPlaying) return;
 
-    const clipEnd = getClipDuration(gameState.step); // in seconds
+    const clipEnd = manualStepAdvance.current
+      ? getUnlockedDuration(gameState.step)
+      : getClipDuration(gameState.step);
 
     const handleTimeUpdate = () => {
       if (audio.currentTime >= clipEnd) {
         audio.pause();
+        manualStepAdvance.current = false;
         setGameState((prev) => ({ ...prev, isPlaying: false }));
         setIsLoading(false);
       }
@@ -92,15 +98,20 @@ const AudioPlayer = ({
     };
 
     try {
+      // Always remove old listeners first
+      audio.removeEventListener("timeupdate", handleTimeUpdate);
+      audio.removeEventListener("error", handleError);
+      audio.removeEventListener("canplay", handleCanPlay);
+
+      // Add fresh ones with current step context
+      audio.addEventListener("timeupdate", handleTimeUpdate);
+      audio.addEventListener("error", handleError);
+      audio.addEventListener("canplay", handleCanPlay);
+
       if (audio.paused) {
         setIsLoading(true);
         setError(null);
         audio.currentTime = 0;
-
-        // Set up error handling first
-        audio.addEventListener("timeupdate", handleTimeUpdate);
-        audio.addEventListener("error", handleError);
-        audio.addEventListener("canplay", handleCanPlay);
 
         const playPromise = audio.play();
 
@@ -141,6 +152,70 @@ const AudioPlayer = ({
     if (step < 1 || step > durations.length) return 0;
     return durations[step - 1];
   };
+
+  const handleSeek = (e) => {
+    if (!barRef.current || !audioRef.current) return;
+
+    const rect = barRef.current.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+
+    const unlockedDuration = getUnlockedDuration(gameState.step);
+
+    // total bar width in px
+    const fullWidth = rect.width;
+
+    // how many pixels are “unlocked”
+    const unlockedWidth = (unlockedDuration / maxUnlockedDuration) * fullWidth;
+
+    // clamp clickX into [0, unlockedWidth]
+    const clampedX = Math.min(Math.max(clickX, 0), unlockedWidth);
+
+    // percentage _within_ the unlocked region
+    const percentage = clampedX / unlockedWidth;
+
+    // finally compute time
+    const newTime = percentage * unlockedDuration;
+
+    audioRef.current.currentTime = newTime;
+    setCurrentTime(newTime);
+  };
+
+  const handleDragSeek = (e) => {
+    if (!isDragging || !barRef.current || !audioRef.current) return;
+
+    const rect = barRef.current.getBoundingClientRect();
+    const clientX = e.type.startsWith("touch")
+      ? e.touches[0].clientX
+      : e.clientX;
+
+    const relativeX = clientX - rect.left;
+    const percentage = Math.min(Math.max(relativeX / rect.width, 0), 1);
+
+    const unlockedDuration = getUnlockedDuration(gameState.step);
+    const newTime = percentage * unlockedDuration;
+
+    audioRef.current.currentTime = newTime;
+    setCurrentTime(newTime);
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e) => handleDragSeek(e);
+    const handleMouseUp = () => setIsDragging(false);
+
+    if (isDragging) {
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+      window.addEventListener("touchmove", handleMouseMove);
+      window.addEventListener("touchend", handleMouseUp);
+    }
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("touchmove", handleMouseMove);
+      window.removeEventListener("touchend", handleMouseUp);
+    };
+  }, [isDragging]);
 
   const togglePlay = () => {
     const audio = audioRef.current;
@@ -262,7 +337,10 @@ const AudioPlayer = ({
               <img
                 src={song.coverUrl || "/covers/placeholder-cover.png"}
                 alt="Album cover"
-                className="w-full h-full object-cover"
+                className={`w-full h-full object-cover transition-opacity duration-300 ${
+                  imageLoaded ? "opacity-100" : "opacity-0"
+                }`}
+                onLoad={() => setImageLoaded(true)}
               />
             )}
           </div>
@@ -286,6 +364,7 @@ const AudioPlayer = ({
         {gameState.step < durations.length && !gameState.isRevealed && (
           <button
             onClick={() => {
+              manualStepAdvance.current = true;
               handleGuessSubmit({
                 artist: "Skip ",
                 title: "❌",
@@ -300,7 +379,15 @@ const AudioPlayer = ({
 
       <div
         ref={barRef}
-        className="relative w-full h-2.5 rounded-full bg-gray-700 overflow-visible"
+        className="relative w-full h-2.5 rounded-full bg-gray-700 overflow-visible cursor-pointer"
+        onMouseDown={(e) => {
+          setIsDragging(true);
+          handleSeek(e); // Jump to position immediately on click
+        }}
+        onTouchStart={(e) => {
+          setIsDragging(true);
+          handleSeek(e); // Works for mobile
+        }}
       >
         {/* Gray bar for max unlocked duration */}
         <div
@@ -342,7 +429,6 @@ const AudioPlayer = ({
         <span>{formatTime(currentTime)}</span>
         <span>{formatTime(maxUnlockedDuration)}</span>
       </div>
-
 
       <audio ref={audioRef} src={encodeURI(song?.filePath)} preload="auto" />
     </div>
