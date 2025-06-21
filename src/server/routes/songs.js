@@ -10,6 +10,8 @@ const db = new Database(dbPath);
 const router = express.Router();
 let cachedSongs = null;
 
+let recentlyPlayed = [];
+
 router.get("/list", (req, res) => {
   try {
     if (!cachedSongs) {
@@ -42,7 +44,10 @@ router.get("/random", (req, res) => {
     }
 
     const requestedArtist = req.query.artist;
-    let filteredSongs = cachedSongs;
+
+    let filteredSongs = cachedSongs.filter(
+      (song) => !recentlyPlayed.some((played) => played.file === song.file)
+    );
 
     // If an artist is specified, filter the songs
     if (requestedArtist) {
@@ -61,6 +66,13 @@ router.get("/random", (req, res) => {
       filteredSongs[Math.floor(Math.random() * filteredSongs.length)];
 
     randomSong.file = randomSong.file;
+
+    // Add song to recently played list
+    recentlyPlayed.unshift(randomSong);
+
+    if (recentlyPlayed.length > 10) {
+      recentlyPlayed.pop(); // Keep only the last 10 songs
+    }
 
     res.json({ song: randomSong });
   } catch (err) {
@@ -90,13 +102,13 @@ router.get("/", (req, res) => {
 });
 
 function getSafeFilePath(filename) {
-  const a =  encodeURI(filename)
+  const a = encodeURI(filename)
     .replace(/'/g, "%27")
     .replace(/\(/g, "%28")
     .replace(/\)/g, "%29");
 
-    console.log("Filename: ", filename, "Encoded: ", a);
-    return a;
+  console.log("Filename: ", filename, "Encoded: ", a);
+  return a;
 }
 
 export default router;
