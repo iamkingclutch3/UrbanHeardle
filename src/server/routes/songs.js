@@ -46,7 +46,7 @@ router.get("/random", (req, res) => {
     const requestedArtist = req.query.artist;
 
     let filteredSongs = cachedSongs.filter(
-      (song) => !recentlyPlayed.some((played) => played.file === song.file)
+      (song) => !recentlyPlayed.some((played) => played == song.file)
     );
 
     // If an artist is specified, filter the songs
@@ -68,7 +68,7 @@ router.get("/random", (req, res) => {
     randomSong.file = randomSong.file;
 
     // Add song to recently played list
-    recentlyPlayed.unshift(randomSong);
+    recentlyPlayed.unshift(randomSong.file);
 
     if (recentlyPlayed.length > 10) {
       recentlyPlayed.pop(); // Keep only the last 10 songs

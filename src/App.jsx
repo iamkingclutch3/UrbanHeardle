@@ -140,22 +140,24 @@ function App() {
 
               const normalizedQuery = removeAccents(query.toLowerCase());
 
-              // Remove duplicates by artist name
-              const uniqueArtists = [];
-              const seen = new Set();
-
+              // Count appearances per artist
+              const artistCount = {};
               for (const song of songs) {
                 const normalizedArtist = removeAccents(
                   song.artist.toLowerCase()
                 );
-                if (
-                  normalizedArtist.includes(normalizedQuery) &&
-                  !seen.has(normalizedArtist)
-                ) {
-                  uniqueArtists.push(song);
-                  seen.add(normalizedArtist);
+                if (normalizedArtist.includes(normalizedQuery)) {
+                  artistCount[song.artist] =
+                    (artistCount[song.artist] || 0) + 1;
                 }
               }
+
+              // Build unique artist list with appearances
+              const uniqueArtists = Object.entries(artistCount).map(
+                ([artist, count]) => ({
+                  artist: `${artist} (${count})`,
+                })
+              );
 
               return uniqueArtists;
             }}
