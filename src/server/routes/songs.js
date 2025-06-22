@@ -70,7 +70,7 @@ router.get("/random", (req, res) => {
     // Add song to recently played list
     recentlyPlayed.unshift(randomSong.file);
 
-    if (recentlyPlayed.length > 10) {
+    if (recentlyPlayed.length > 100) {
       recentlyPlayed.pop(); // Keep only the last 10 songs
     }
 

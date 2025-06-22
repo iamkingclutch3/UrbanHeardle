@@ -104,7 +104,7 @@ function App() {
       guesses: [],
       isRevealed: false,
     });
-    setStreak(0);
+    //setStreak(0);
   };
 
   if (isLoading) {
