@@ -82,6 +82,7 @@ function App() {
   useEffect(() => {
     if (!isLoading) {
       resetGame();
+      setStreak(0);
     }
   }, [selectedArtist]);
 
@@ -104,7 +105,16 @@ function App() {
       guesses: [],
       isRevealed: false,
     });
-    //setStreak(0);
+    
+    if (
+      !gameState.guesses.some(
+      (g) => g.isCorrectArtist && g.isCorrectTitle
+      )
+    ) {
+      console.log(gameState.guesses);
+      setStreak(0);
+    }
+    
   };
 
   if (isLoading) {
