@@ -3,12 +3,14 @@ import { getRandomSong, getSongList } from "./utils/songs";
 import AudioPlayer from "./components/AudioPlayer";
 import ResultDisplay from "./components/ResultDisplay";
 import GuessAutocompleteInput from "./components/GuessAutocompleteInput";
+import ChooseArtist from "./components/ChooseArtist";
 import FeedbackWidget from "./components/FeedbackWidget";
-import Leaderboard from "./components/Leaderboard";
+//import Leaderboard from "./components/Leaderboard";
 import { submitStreakScore } from "./utils/score";
 
 function App() {
   const [currentSong, setCurrentSong] = useState(null);
+  const [selectedArtist, setSelectedArtist] = useState("");
   const [gameState, setGameState] = useState({
     step: 1,
     isPlaying: false,
@@ -16,26 +18,27 @@ function App() {
     isRevealed: false,
   });
   const [isLoading, setIsLoading] = useState(true);
+
+  const [username, setUsername] = useState(() => {
+    return localStorage.getItem("username") || "Guest";
+  });
   const [streak, setStreak] = useState(0);
 
-  const username = "Guest";
+  useEffect(() => {
+    if (!username || streak === 0) return;
+    submitStreakScore(username, streak).catch((error) => {
+      console.error("Error submitting streak score:", error);
+    });
+  }, [streak, username]);
 
   useEffect(() => {
     const initializeGame = async () => {
-      setCurrentSong(await getRandomSong());
+      setCurrentSong(await getRandomSong(selectedArtist));
       setIsLoading(false);
     };
 
     initializeGame();
   }, []);
-
-  // handle streak and score submission
-  useEffect(() => {
-    if (!username || streak == 0) return;
-    submitStreakScore(username, streak).catch((error) => {
-      console.error("Error submitting streak score:", error);
-    });
-  }, [streak]);
 
   const handleGuessSubmit = (guess) => {
     if (gameState.guesses.length >= 6 || gameState.isRevealed) return;
@@ -76,6 +79,12 @@ function App() {
     }));
   };
 
+  useEffect(() => {
+    if (!isLoading) {
+      resetGame();
+    }
+  }, [selectedArtist]);
+
   const nextStep = () => {
     if (gameState.step < 6) {
       setGameState((prev) => ({
@@ -87,7 +96,7 @@ function App() {
   };
 
   const resetGame = async () => {
-    const newSong = await getRandomSong();
+    const newSong = await getRandomSong(selectedArtist);
     setCurrentSong(newSong);
     setGameState({
       step: 1,
@@ -113,10 +122,46 @@ function App() {
       {/* Floating Leaderboard Bubble 
       <div className="hidden md:block fixed left-4 top-1/2 transform -translate-y-1/2 z-10">
         <div className="bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-700 w-60 hover:w-64 transition-all duration-200">
-          <Leaderboard username={username} />
+          <Leaderboard username={username} setUsername={setUsername} />
+        </div>
+      </div>*/}
+      {/* Floating ChooseArtist Bubble */}
+      <div className="hidden md:block fixed right-4 top-1/2 transform -translate-y-1/2 z-10">
+        <div className="bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-700 w-60 hover:w-64 transition-all duration-200">
+          <ChooseArtist
+            fetchSuggestions={async (query) => {
+              const songs = await getSongList();
+
+              // Helper function to remove accents and diacritics
+              const removeAccents = (str) => {
+                return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+              };
+
+              const normalizedQuery = removeAccents(query.toLowerCase());
+
+              // Remove duplicates by artist name
+              const uniqueArtists = [];
+              const seen = new Set();
+
+              for (const song of songs) {
+                const normalizedArtist = removeAccents(
+                  song.artist.toLowerCase()
+                );
+                if (
+                  normalizedArtist.includes(normalizedQuery) &&
+                  !seen.has(normalizedArtist)
+                ) {
+                  uniqueArtists.push(song);
+                  seen.add(normalizedArtist);
+                }
+              }
+
+              return uniqueArtists;
+            }}
+            onArtistSelect={setSelectedArtist}
+          />
         </div>
       </div>
-*/}
       <div className="min-h-screen bg-gray-900 text-white p-4">
         <header className="max-w-4xl mx-auto text-center mb-8">
           <h1 className="text-4xl font-bold mb-2">Povlao Guess</h1>
