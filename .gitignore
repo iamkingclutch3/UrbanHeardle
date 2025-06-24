@@ -28,3 +28,4 @@ scores.json
 *.njsproj
 *.sln
 *.sw?
+.env

@@ -8,8 +8,10 @@ const dbPath = path.join(__dirname, "../../../public/manifest.db");
 const db = new Database(dbPath);
 
 const router = express.Router();
-let cachedSongs = null;
 
+let cachedSongs = null;
+let shuffledPlaylist = [];
+let currentIndex = 0;
 let recentlyPlayed = [];
 
 router.get("/list", (req, res) => {
@@ -37,44 +39,65 @@ router.get("/random", (req, res) => {
         .prepare("SELECT title, artist, file, coverUrl FROM songs")
         .all();
       console.log(`Cached ${cachedSongs.length} songs`);
+      shuffledPlaylist = shuffle([...cachedSongs]);
     }
 
     if (cachedSongs.length === 0) {
       return res.status(404).json({ error: "No songs available" });
     }
 
-    const requestedArtist = req.query.artist;
+    const requestedArtist = req.query.artist?.toLowerCase();
 
-    let filteredSongs = cachedSongs.filter(
-      (song) => !recentlyPlayed.some((played) => played == song.file)
-    );
+    let nextSong = null;
 
-    // If an artist is specified, filter the songs
     if (requestedArtist) {
-      filteredSongs = cachedSongs.filter(
-        (song) => song.artist.toLowerCase() === requestedArtist.toLowerCase()
+      // Filter songs by artist only (no shuffling in this case)
+      const artistSongs = cachedSongs.filter(
+        (song) => song.artist.toLowerCase() === requestedArtist
       );
 
-      if (filteredSongs.length === 0) {
+      const availableArtistSongs = artistSongs.filter(
+        (song) => !recentlyPlayed.includes(song.file)
+      );
+
+      if (availableArtistSongs.length === 0) {
         return res.status(404).json({
-          error: `No songs available for artist: ${requestedArtist}`,
+          error: `No non-recent songs available for artist: ${requestedArtist}`,
         });
+      }
+
+      nextSong =
+        availableArtistSongs[
+          Math.floor(Math.random() * availableArtistSongs.length)
+        ];
+    } else {
+      // Pick next from shuffled playlist
+      while (currentIndex < shuffledPlaylist.length) {
+        const candidate = shuffledPlaylist[currentIndex];
+        currentIndex++;
+
+        if (!recentlyPlayed.includes(candidate.file)) {
+          nextSong = candidate;
+          break;
+        }
+      }
+
+      // All songs exhausted or recently played, reshuffle
+      if (!nextSong) {
+        shuffledPlaylist = shuffle([...cachedSongs]);
+        currentIndex = 0;
+        nextSong = shuffledPlaylist[currentIndex++];
       }
     }
 
-    const randomSong =
-      filteredSongs[Math.floor(Math.random() * filteredSongs.length)];
-
-    randomSong.file = randomSong.file;
-
-    // Add song to recently played list
-    recentlyPlayed.unshift(randomSong.file);
-
-    if (recentlyPlayed.length > 100) {
-      recentlyPlayed.pop(); // Keep only the last 10 songs
+    recentlyPlayed.unshift(nextSong.file);
+    if (recentlyPlayed.length > 200) {
+      recentlyPlayed.pop();
     }
 
-    res.json({ song: randomSong });
+    console.log(`Selected: ${nextSong.title} by ${nextSong.artist}`);
+
+    res.json({ song: nextSong });
   } catch (err) {
     console.error("DB Error:", err.message);
     return res.status(500).json({ error: "Internal Server Error" });
@@ -109,6 +132,10 @@ function getSafeFilePath(filename) {
 
   console.log("Filename: ", filename, "Encoded: ", a);
   return a;
+}
+
+function shuffle(array) {
+  return array.sort(() => Math.random() - 0.5);
 }
 
 export default router;

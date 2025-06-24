@@ -111,7 +111,6 @@ function App() {
       (g) => g.isCorrectArtist && g.isCorrectTitle
       )
     ) {
-      console.log(gameState.guesses);
       setStreak(0);
     }
     

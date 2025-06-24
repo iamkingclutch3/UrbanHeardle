@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     watch: {
-      ignored: [/public/],
+      ignored: ["/public/*", "/src/server/*"],
     },
     port: 5174, // ✅ Avoid 3000/7000
     open: true,

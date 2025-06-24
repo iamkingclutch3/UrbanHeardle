@@ -1,3 +1,5 @@
+import dotenv from "dotenv";
+dotenv.config();
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -53,7 +55,9 @@ function sanitizeMp3Filenames() {
       }
     });
 
-    console.log(`\nDone. ${changedCount} files renamed, ${errorCount} errors.\n`);
+    console.log(
+      `\nDone. ${changedCount} files renamed, ${errorCount} errors.\n`
+    );
   } catch (error) {
     console.error("Error:", error.message);
     process.exit(1);

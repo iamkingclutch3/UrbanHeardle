@@ -18,6 +18,7 @@ db.prepare(
     artist TEXT,
     file TEXT UNIQUE,
     coverUrl TEXT,
+    popularity INTEGER,
     modified INTEGER
   )
 `
@@ -26,8 +27,8 @@ db.prepare(
 db.prepare("CREATE INDEX IF NOT EXISTS idx_songs_file ON songs(file)").run();
 
 const insertOrReplace = db.prepare(`
-  INSERT OR REPLACE INTO songs (title, artist, file, coverUrl, modified)
-  VALUES (@title, @artist, @file, @coverUrl, @modified)
+  INSERT OR REPLACE INTO songs (title, artist, file, coverUrl, popularity, modified)
+  VALUES (@title, @artist, @file, @coverUrl, @popularity, @modified)
 `);
 
 let cachedPlaceholder = null;
@@ -66,7 +67,42 @@ const extractCoverImage = async (songPath) => {
   });
 };
 
-const processFile = async (songFile, songsDirectory, existingMap) => {
+// Helper to get Spotify API access token (Client Credentials Flow)
+async function getSpotifyAccessToken() {
+  const clientId = process.env.SPOTIFY_CLIENT_ID;
+  const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+  const creds = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+  const res = await fetch("https://accounts.spotify.com/api/token", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Authorization: `Basic ${creds}`,
+    },
+    body: "grant_type=client_credentials",
+  });
+  const data = await res.json();
+  return data.access_token;
+}
+
+async function getPopularityFromSpotify(artist, title, accessToken) {
+  try {
+    const q = encodeURIComponent(`${artist} ${title}`);
+    const url = `https://api.spotify.com/v1/search?q=${q}&type=track&limit=1`;
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!res.ok) return 0;
+    const data = await res.json();
+    const track = data.tracks && data.tracks.items && data.tracks.items[0];
+    if (!track || typeof track.popularity !== "number") return 0;
+    // Map Spotify popularity (0-100) to 0-10
+    return Math.round(track.popularity);
+  } catch {
+    return 0;
+  }
+}
+
+const processFile = async (songFile, songsDirectory, existingMap, accessToken) => {
   try {
     const fullPath = path.join(songsDirectory, songFile);
     const stats = fs.statSync(fullPath);
@@ -82,11 +118,18 @@ const processFile = async (songFile, songsDirectory, existingMap) => {
     const title = titleParts.join(" - ");
     const coverUrl = await extractCoverImage(fullPath);
 
+    // Get popularity from Spotify
+    let popularity = 0;
+    if (artist && title) {
+      popularity = await getPopularityFromSpotify(artist.trim(), title.trim(), accessToken);
+    }
+
     const song = {
       title: title.trim(),
       artist: artist.trim() || "Unknown Artist",
       file: songFile,
       coverUrl,
+      popularity,
       modified,
     };
 
@@ -97,13 +140,13 @@ const processFile = async (songFile, songsDirectory, existingMap) => {
 };
 
 // Throttled concurrent processing
-const processWithLimit = async (files, limit, songsDirectory, existingMap) => {
+const processWithLimit = async (files, limit, songsDirectory, existingMap, accessToken) => {
   let index = 0;
 
   const next = async () => {
     if (index >= files.length) return;
     const current = index++;
-    await processFile(files[current], songsDirectory, existingMap);
+    await processFile(files[current], songsDirectory, existingMap, accessToken);
     return next();
   };
 
@@ -143,6 +186,9 @@ const generateManifest = async (songsDirectory, concurrency = 10) => {
     console.log(`Removed ${deletedFiles.length} deleted song(s) from DB.`);
   }
 
+  // Get Spotify access token once
+  const accessToken = await getSpotifyAccessToken();
+
   // Process new or changed songs
   const newOrChangedSongs = songFiles.filter((file) => {
     const fullPath = path.join(songsDirectory, file);
@@ -160,7 +206,8 @@ const generateManifest = async (songsDirectory, concurrency = 10) => {
     newOrChangedSongs,
     concurrency,
     songsDirectory,
-    existingMap
+    existingMap,
+    accessToken
   );
 
   console.log("Manifest generation completed.");
